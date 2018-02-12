@@ -8,10 +8,10 @@ use std::process::{Command, Stdio, Output};
 use jobserver::Client;
 use shell_escape::escape;
 
-use util::{CargoResult, CargoResultExt, CargoError, process_error, read2};
+use util::{CargoResult, CargoResultExt, CargoError, paths, process_error, read2};
 
 /// A builder object for an external process, similar to `std::process::Command`.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct ProcessBuilder {
     /// The program to execute.
     program: OsString,
@@ -26,6 +26,20 @@ pub struct ProcessBuilder {
     ///
     /// [jobserver_docs]: https://docs.rs/jobserver/0.1.6/jobserver/
     jobserver: Option<Client>,
+}
+
+impl fmt::Debug for ProcessBuilder {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let dylib = paths.dylib_path_envvar();
+        let path = self.get_env(dylib).unwrap_or(OsString::new());
+        write!(f, "`{}={} {}", dylib, path.to_string_lossy(), self.program.to_string_lossy())?;
+
+        for arg in &self.args {
+            write!(f, " {}", escape(arg.to_string_lossy()))?;
+        }
+
+        write!(f, "`")
+    }
 }
 
 impl fmt::Display for ProcessBuilder {
